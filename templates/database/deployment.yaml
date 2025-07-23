@@ -8,10 +8,12 @@ spec:
   replicas: 1
   selector:
     matchLabels:
+      {{- include "class-schedule.selectorLabels" . | nindent 6 }}
       app: {{ .Release.Name }}-database
   template:
     metadata:
       labels:
+        {{- include "class-schedule.selectorLabels" . | nindent 8 }}
         app: {{ .Release.Name }}-database
     spec:
       containers:

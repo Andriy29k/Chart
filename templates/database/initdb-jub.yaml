@@ -2,6 +2,8 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: {{ .Release.Name }}-database-initdb-job
+  labels:
+    {{- include "class-schedule.labels" . | nindent 4 }}
 spec:
   template:
     spec:
