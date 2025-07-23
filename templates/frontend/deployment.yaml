@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-frontend
+  labels:
+    {{- include "class-schedule.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-frontend
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.frontend.service.targetPort }}
+        env:
+        - name: BACKEND_IP
+          value: {{ .Values.frontend.env.BACKEND_IP }}
+        volumeMounts:
+        - name: config
+          mountPath: /conf/entrypoint.sh
+          subPath: entrypoint.sh
+        - name: config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        command:
+        - /conf/entrypoint.sh
+        - nginx
+        - -g
+        - daemon off;
+        - -c
+        - /etc/nginx/nginx.conf
+        resources:
+          {{- toYaml .Values.frontend.resources | nindent 12 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Release.Name }}-frontend-config
+          defaultMode: 0755

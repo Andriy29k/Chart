@@ -1,0 +1,93 @@
+# Redis
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7.0"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  auth:
+    enabled: false
+
+# Database (Postgres)
+database:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5432
+  credentials:
+    username: "class_schedule_user"
+    password: "secure_password"
+    database: "class_schedule_db"
+  restore:
+    enabled: true
+    dumpFile: "files/database/dump.sql"
+
+# Frontend
+frontend:
+  enabled: true
+  image:
+    repository: my-class-schedule-frontend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 3000
+  ingress:
+    enabled: true
+    entryPoint: "web"
+    host: "class-schedule-app.pp.ua"
+    path: "/"
+    pathType: "Prefix"
+    tls:
+      enabled: true
+      secretName: "class-schedule-tls"
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+  env:
+    BACKEND_IP: "http://class-schedule-backend:80"
+
+# Backend
+backend:
+  enabled: true
+  image:
+    repository: my-class-schedule-backend
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+  ingress:
+    enabled: true
+    entryPoint: "web"
+    host: "class-schedule-app.pp.ua"
+    path: "/api"
+    pathType: "Prefix"
+    tls:
+      enabled: true
+      secretName: "class-schedule-tls"
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+  env:
+    DB_ENDPOINT: "jdbc:postgresql://class-schedule-database:5432/class_schedule_db"
+    DB_USERNAME: "class_schedule_user"
+    DB_PASSWORD: "secure_password"
+    REDIS_URL: "redis://class-schedule-redis:6379"

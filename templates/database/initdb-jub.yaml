@@ -1,0 +1,30 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-database-initdb-job
+spec:
+  template:
+    spec:
+      containers:
+      - name: initdb
+        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+        command:
+        - /bin/sh
+        - -c
+        - |
+          psql -h {{ .Release.Name }}-database -U {{ .Values.database.credentials.username }} -d {{ .Values.database.credentials.database }} -f /docker-entrypoint-initdb.d/dump.sql
+        env:
+        - name: PGPASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-database-secret
+              key: postgres-password
+        volumeMounts:
+        - name: initdb
+          mountPath: /docker-entrypoint-initdb.d
+      volumes:
+      - name: initdb
+        configMap:
+          name: {{ .Release.Name }}-database-initdb
+      restartPolicy: Never
+  backoffLimit: 1

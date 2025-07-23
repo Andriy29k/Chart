@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-backend
+  labels:
+    {{- include "class-schedule.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-backend
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-backend
+    spec:
+      containers:
+      - name: backend
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.backend.service.targetPort }}
+        env:
+        - name: DB_ENDPOINT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-backend-secret
+              key: db-endpoint
+        - name: DB_USERNAME_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-backend-secret
+              key: db-username
+        - name: DB_USERPASSWORD_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-backend-secret
+              key: db-password
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-backend-secret
+              key: redis-url
+        volumeMounts:
+        - name: config
+          mountPath: /conf/entrypoint.sh
+          subPath: entrypoint.sh
+        command:
+        - /conf/entrypoint.sh
+        - /opt/tomcat/bin/catalina.sh
+        - run
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 12 }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ .Release.Name }}-backend-config
+          defaultMode: 0755
